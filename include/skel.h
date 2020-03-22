@@ -62,6 +62,8 @@ void init();
 
 void parse_arp_table();
 
+uint16_t ip_checksum(void* vdata,size_t length);
+
 /**
  * hwaddr_aton - Convert ASCII string to MAC address (colon-delimited format)
  * @txt: MAC address as a string (e.g., "00:11:22:33:44:55")

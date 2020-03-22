@@ -3,7 +3,9 @@
 //
 
 #include <stdio.h>
-#include <unistd.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
 
 #ifndef PARSER_H
 #define PARSER_H
@@ -15,5 +17,7 @@ typedef struct {
     int interface;
 } routing_table_entry;
 
+routing_table_entry *read_from_file();
+routing_table_entry parse_entry(char *routing_table_line);
 
 #endif
