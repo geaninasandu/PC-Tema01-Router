@@ -25,6 +25,7 @@
 /* arphdr */
 #include <net/if_arp.h>
 #include <asm/byteorder.h>
+#include <netinet/if_ether.h>
 
 /* 
  *Note that "buffer" should be at least the MTU size of the 
@@ -62,7 +63,7 @@ void init();
 
 void parse_arp_table();
 
-uint16_t ip_checksum(void* vdata,size_t length);
+uint16_t ip_checksum(void *vdata, size_t length);
 
 /**
  * hwaddr_aton - Convert ASCII string to MAC address (colon-delimited format)

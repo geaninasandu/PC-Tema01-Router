@@ -64,7 +64,6 @@ int get_packet(packet *m) {
             }
         }
     }
-    return -1;
 }
 
 char *get_interface_ip(int interface) {

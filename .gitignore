@@ -1,5 +1,9 @@
-<<<<<<< HEAD
+hosts_output
+router
 .idea
+test.c
+router_*
+__pycache__
 =======
 # Prerequisites
 *.d
@@ -53,7 +57,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-
-test.c
-
->>>>>>> c1c63d897eb10228c2757e68fdd36360590e11b0
