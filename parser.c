@@ -183,4 +183,3 @@ arp_table_entry parse_arp_entry(char *arp_table_line) {
 
     return entry;
 }
-}
