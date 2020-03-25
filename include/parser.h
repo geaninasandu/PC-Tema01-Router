@@ -26,6 +26,9 @@ typedef struct {
 routing_table_entry *read_from_file();
 arp_table_entry *parse_arp_table(int *entry_number);
 arp_table_entry parse_arp_entry(char *arp_table_line);
+
+routing_table_entry *read_from_file();
+
 routing_table_entry parse_entry(char *routing_table_line);
 
 #endif

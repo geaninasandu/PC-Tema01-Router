@@ -108,5 +108,21 @@ int main(int argc, char *argv[]) {
 //        memcpy(ethernet_header->ether_dhost, arp_entry->mac, sizeof(arp_entry->mac));
 //
 //        send_packet(best_route->interface, &m);
+
+        struct ether_arp *arp = (struct ether_arp *) (m.payload + sizeof(struct ether_header));
+
+        /* If the number of the ether_type field of the ethernet header is 0x0806, the message is
+         * an ARP packet */
+        if (ethernet_header->ether_type == htons(0x806)) {
+//            printf("%u %u %d %d %u %s %hhn\n", arp->arp_hrd, arp->arp_pro, arp->arp_hln,
+//                    arp->arp_pln, arp->arp_op, arp->arp_sha, arp->arp_spa);
+        printf("%d\n", arp->arp_spa);
+//            printf("%s\n", m.payload);
+//            printf("%d\n", ethernet_header->ether_shost);
+        } else if (ethernet_header->ether_type == htons(0x800)) {
+            printf("2");
+        }
+
+
     }
 }

@@ -61,6 +61,8 @@ int get_interface_mac(int interface, uint8_t *mac);
 
 void init();
 
+void parse_arp_table();
+
 uint16_t ip_checksum(void *vdata, size_t length);
 
 /**
