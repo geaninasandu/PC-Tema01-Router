@@ -1,19 +1,13 @@
 #include "skel.h"
 #include "include/parser.h"
-<<<<<<< HEAD
 #include "include/utils.h"
-=======
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
 
 routing_table_entry *routing_table;
 int routing_table_length = 0;
 
-<<<<<<< HEAD
 arp_table_entry *arp_table;
 int arp_table_length = 0;
 
-=======
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
 /**
  * Search for the destination IP address in the routing table, using a modified binary search
  * algorithm that returns the first occurrence of the IP (therefore the best matching route, due to
@@ -51,7 +45,6 @@ routing_table_entry *get_best_route(uint32_t destination_ip) {
     return &routing_table[index];
 }
 
-<<<<<<< HEAD
 arp_table_entry *get_arp_entry(uint32_t destination_ip) {
 
     for (int i = 0; i < arp_table_length; ++i) {
@@ -62,8 +55,6 @@ arp_table_entry *get_arp_entry(uint32_t destination_ip) {
     return NULL;
 }
 
-=======
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
 int main(int argc, char *argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
     packet m;
@@ -72,10 +63,7 @@ int main(int argc, char *argv[]) {
     init();
 
     routing_table = read_from_file(&routing_table_length);
-<<<<<<< HEAD
     arp_table = parse_arp_table(&arp_table_length);
-=======
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
 
     while (1) {
         rc = get_packet(&m);
@@ -84,7 +72,6 @@ int main(int argc, char *argv[]) {
 
         struct ether_header *ethernet_header = (struct ether_header *) m.payload;
         struct iphdr *ip_header = (struct iphdr *) (m.payload + sizeof(struct ether_header));
-<<<<<<< HEAD
 
         if(ethernet_header->ether_type == htons(0x806)) {
 
@@ -122,8 +109,6 @@ int main(int argc, char *argv[]) {
 //
 //        send_packet(best_route->interface, &m);
 
-=======
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
         struct ether_arp *arp = (struct ether_arp *) (m.payload + sizeof(struct ether_header));
 
         /* If the number of the ether_type field of the ethernet header is 0x0806, the message is
@@ -139,9 +124,5 @@ int main(int argc, char *argv[]) {
         }
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 05256a6b37c0e77f69e23220163c6970c222ace2
     }
 }
