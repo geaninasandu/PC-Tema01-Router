@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
 //
 //        send_packet(best_route->interface, &m);
 
+
         struct ether_arp *arp = (struct ether_arp *) (m.payload + sizeof(struct ether_header));
 
         /* If the number of the ether_type field of the ethernet header is 0x0806, the message is
