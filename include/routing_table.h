@@ -18,17 +18,8 @@ typedef struct {
     int interface;
 } routing_table_entry;
 
-typedef struct {
-    uint32_t ip;
-    uint8_t mac[6];
-} arp_table_entry;
-
 routing_table_entry *read_from_file();
-arp_table_entry *parse_arp_table(int *entry_number);
-arp_table_entry parse_arp_entry(char *arp_table_line);
-
-routing_table_entry *read_from_file();
-
 routing_table_entry parse_entry(char *routing_table_line);
+routing_table_entry *get_best_route(uint32_t destination_ip);
 
 #endif

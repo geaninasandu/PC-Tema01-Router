@@ -63,6 +63,8 @@ void init();
 
 void parse_arp_table();
 
+int hex2num(char c);
+
 uint16_t ip_checksum(void *vdata, size_t length);
 
 /**

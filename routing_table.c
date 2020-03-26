@@ -2,7 +2,7 @@
 // Created by maria on 3/22/20.
 //
 
-#include "include/parser.h"
+#include "include/routing_table.h"
 
 /**
  * Comparator function used to sort the entries ascending by their prefix IP address;
@@ -116,70 +116,6 @@ routing_table_entry parse_entry(char *routing_table_line) {
     inet_pton(AF_INET, next_hop_string, &(entry.next_hop));
     inet_pton(AF_INET, subnet_mask_string, &(entry.subnet_mask));
     entry.interface = atoi(interface_string);
-
-    return entry;
-}
-
-arp_table_entry *parse_arp_table(int *entry_number) {
-    FILE *file = fopen("arp_table.txt", "r");
-    char *arp_table_line = NULL;
-    size_t line_length = 0, arp_table_length = 2;
-    ssize_t read;
-
-    /* Dynamically allocate an array of routing_table_entry structs */
-    arp_table_entry *arp_table = (arp_table_entry *) malloc(arp_table_length * sizeof
-            (arp_table_entry));
-
-    if (file == NULL) {
-        exit(1);
-    }
-
-    while ((read = getline(&arp_table_line, &line_length, file)) != -1) {
-        /* Parse the line and add a new entry in the routing table array */
-        arp_table[(*entry_number)] = parse_arp_entry(arp_table_line);
-        (*entry_number)++;
-
-        /* If the number of entries exceeds the allocated size, reallocate the array */
-        if ((*entry_number) == arp_table_length) {
-            arp_table_length *= 2;
-            arp_table = (arp_table_entry *) realloc(arp_table, arp_table_length * sizeof
-                    (arp_table_entry));
-        }
-    }
-
-    return arp_table;
-}
-
-arp_table_entry parse_arp_entry(char *arp_table_line) {
-    arp_table_entry entry;
-    char ip_address_string[20], mac_address_string[20];
-    int i = 0, j = 0, field = 0;
-
-    while (arp_table_line[i] != '\n' && arp_table_line[i]) {
-        switch (field) {
-            case 0:
-                ip_address_string[j] = arp_table_line[i];
-                ip_address_string[j + 1] = '\0';
-                break;
-
-            case 1:
-                mac_address_string[j] = arp_table_line[i];
-                mac_address_string[j + 1] = '\0';
-                break;
-        }
-
-        if (arp_table_line[i + 1] == ' ') {
-            i += 2;
-            j = 0;
-            field++;
-        } else {
-            i++;
-            j++;
-        }
-    }
-
-    inet_pton(AF_INET, ip_address_string, &(entry.ip));
-    hwaddr_aton(mac_address_string, entry.mac);
 
     return entry;
 }

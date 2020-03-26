@@ -144,7 +144,7 @@ void init() {
     interfaces[3] = s3;
 }
 
-static int hex2num(char c) {
+int hex2num(char c) {
     if (c >= '0' && c <= '9')
         return c - '0';
     if (c >= 'a' && c <= 'f')
