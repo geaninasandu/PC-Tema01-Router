@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
     while (1) {
         rc = get_packet(&m);
         DIE(rc < 0, "get_message");
-
-        /* Initialize the structures corresponding to the Ethernet and IP headers */
+//
+//        /* Initialize the structures corresponding to the Ethernet and IP headers */
         struct ether_header *ethernet_header = (struct ether_header *) m.payload;
         struct iphdr *ip_header = (struct iphdr *) (m.payload + sizeof(struct ether_header));
 
@@ -106,11 +106,14 @@ int main(int argc, char *argv[]) {
                 if (arp_header->arp_op == htons(ARPOP_REQUEST)) {
                     packet reply;
 
+
                     struct ether_arp *arp_reply = (struct ether_arp *) (reply.payload + sizeof
                             (struct ether_header));
 
+
                     arp_reply = build_arp_frame(arp_reply, ARPOP_REPLY, interface_mac,
-                            interface_ip_string, arp_header->arp_sha, source_ip);
+                                                interface_ip_string, arp_header->arp_sha,
+                                                source_ip);
 
                     struct ether_header *reply_eth_header = (struct ether_header *) reply.payload;
 
@@ -126,33 +129,34 @@ int main(int argc, char *argv[]) {
 
                 add_entry_to_table(arp_table, &arp_table_length, source_ip, arp_header->arp_sha);
             }
-
         }
-
-//        if (ip_checksum(ip_header, sizeof(struct iphdr)) != 0) {
-//            printf("Bad checksum.\n");
-//            continue;
+//
 //        }
 //
-//        if (ip_header->ttl < 1) {
-//            printf("TTL exceeded.\n");
-//            continue;
-//        }
+////        if (ip_checksum(ip_header, sizeof(struct iphdr)) != 0) {
+////            printf("Bad checksum.\n");
+////            continue;
+////        }
+////
+////        if (ip_header->ttl < 1) {
+////            printf("TTL exceeded.\n");
+////            continue;
+////        }
+////
+////        routing_table_entry *best_route = get_best_route(ip_header->daddr);
+////        if (best_route == NULL)
+////            printf("No route found.\n");
+////
+////        ip_header->ttl--;
+////        ip_header->check = 0;
+////        ip_header->check = ip_checksum(ip_header, sizeof(struct iphdr));
+////
+////        arp_table_entry *arp_entry = get_arp_entry(ip_header->daddr);
+////        memcpy(ethernet_header->ether_dhost, arp_entry->mac, sizeof(arp_entry->mac));
+////
+////        send_packet(best_route->interface, &m);
 //
-//        routing_table_entry *best_route = get_best_route(ip_header->daddr);
-//        if (best_route == NULL)
-//            printf("No route found.\n");
-//
-//        ip_header->ttl--;
-//        ip_header->check = 0;
-//        ip_header->check = ip_checksum(ip_header, sizeof(struct iphdr));
-//
-//        arp_table_entry *arp_entry = get_arp_entry(ip_header->daddr);
-//        memcpy(ethernet_header->ether_dhost, arp_entry->mac, sizeof(arp_entry->mac));
-//
-//        send_packet(best_route->interface, &m);
-
-        free(interface_mac);
+//        free(interface_mac);
     }
 
     free(source_ip);

@@ -7,12 +7,10 @@
 struct ether_arp *build_arp_frame(struct ether_arp *arp_frame, uint16_t op, uint8_t *sha, char
 *spa, uint8_t *tha, char *tpa) {
 
-//    struct ether_arp *arp_frame = (struct ether_arp *) (m.payload + sizeof(struct ether_arp));
-
-    arp_frame->arp_hrd = ARPHRD_ETHER;
-    arp_frame->arp_pro = ETHERTYPE_IP;
+    arp_frame->arp_hrd = htons(ARPHRD_ETHER);
+    arp_frame->arp_pro = htons(ETHERTYPE_IP);
     arp_frame->arp_hln = 6;
-    arp_frame->arp_pln = 8;
+    arp_frame->arp_pln = 4;
     arp_frame->arp_op = htons(op);
 
     for (int i = 0; i < 6; ++i) {
@@ -25,8 +23,6 @@ struct ether_arp *build_arp_frame(struct ether_arp *arp_frame, uint16_t op, uint
 
     return arp_frame;
 }
-
-//int send_arp_reply()
 
 int mac_address_equal(uint8_t *mac1, uint8_t *mac2) {
     for (int i = 0; i < 6; ++i) {
