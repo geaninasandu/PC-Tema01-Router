@@ -1,6 +1,8 @@
-#include "skel.h"
+#include "include/skel.h"
 #include "include/routing_table.h"
 #include "include/arp.h"
+#include "include/queue.h"
+#include "include/forwarding.h"
 
 routing_table_entry *routing_table;
 int routing_table_length = 0;
@@ -53,8 +55,9 @@ int main(int argc, char *argv[]) {
 
     init();
 
+    queue packet_queue;
+    packet_queue = queue_create();
     char *source_ip = (char *) malloc(20 * sizeof(char));
-    char *target_ip = (char *) malloc(20 * sizeof(char));
     char *destination_ip = (char *) malloc(20 * sizeof(char));
 
     routing_table = read_from_file(&routing_table_length);
@@ -64,22 +67,76 @@ int main(int argc, char *argv[]) {
         rc = get_packet(&m);
         DIE(rc < 0, "get_message");
 
-        char *destination_gateway;
+        char *destination_gateway, *source_gateway;
         routing_table_entry *best_route;
-        uint8_t *interface_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
+        uint8_t *source_interface_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
+        uint8_t *destination_interface_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
         uint32_t interface_ip;
 
         /* Initialize the structures corresponding to the Ethernet and IP headers */
         struct ether_header *ethernet_header = (struct ether_header *) m.payload;
         struct iphdr *ip_header = (struct iphdr *) (m.payload + sizeof(struct ether_header));
+        struct icmphdr *icmp_header = (struct icmphdr *) (m.payload + sizeof(struct ether_header) +
+                sizeof(struct iphdr));
 
         /* Get the IP and the MAC of the interface from which the message came */
         char *interface_ip_string = get_interface_ip(m.interface);
-        get_interface_mac(m.interface, interface_mac);
+        get_interface_mac(m.interface, source_interface_mac);
         inet_pton(AF_INET, interface_ip_string, &(interface_ip));
 
-        /* If the type of the ethernet header is 0x0806, the message is an ARP frame */
-        if (ethernet_header->ether_type == htons(ETHERTYPE_ARP)) {
+        if (ethernet_header->ether_type == htons(ETHERTYPE_IP)) {
+
+            inet_ntop(AF_INET, &(ip_header->saddr), source_ip, 20);
+
+            if (ip_header->protocol == IPPROTO_ICMP && is_router_interface(destination_ip) != -1) {
+                packet echo_reply;
+
+                struct icmphdr *icmp_reply = (struct icmphdr *) (echo_reply.payload + sizeof(struct
+                        ether_header) + sizeof(struct iphdr));
+                build_icmp_header(ip_header, icmp_reply, interface_ip, ip_header->saddr);
+
+                struct ether_header *ethernet_reply = (struct ether_header *) echo_reply.payload;
+                build_ethernet_header(ethernet_reply, ethernet_header->ether_dhost,
+                                      ethernet_header->ether_shost, ETHERTYPE_IP);
+
+                send_packet(m.interface, &echo_reply);
+            } else {
+
+            }
+
+            /* Get the MAC address of the interface to the destination host */
+            get_interface_mac(best_route->interface, destination_interface_mac);
+
+            /* Check if the destination MAC address exists in the ARP table */
+            /* If there is no entry containing the destination IP address, send a broadcast ARP
+             * request to get the MAC of the host */
+            if (get_arp_entry(arp_table, arp_table_length, destination_ip) == NULL) {
+                printf("cv\n");
+
+
+                packet request;
+                uint8_t *broadcast_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
+
+                for (int i = 0; i < 6; ++i) {
+                    broadcast_mac[i] = 0xff;
+                }
+
+                /* Build the request's packet headers and send the created packet */
+                struct ether_arp *arp_request = (struct ether_arp *) (request.payload + sizeof
+                        (struct ether_header));
+                build_arp_frame(arp_request, ARPOP_REQUEST, destination_interface_mac,
+                                source_gateway, broadcast_mac, source_ip);
+
+                struct ether_header *request_eth_header = (struct ether_header *) request.payload;
+                build_ethernet_header(request_eth_header, destination_interface_mac, broadcast_mac,
+                                      ETHERTYPE_ARP);
+
+                send_packet(best_route->interface, &request);
+            }
+
+        } else if (ethernet_header->ether_type == htons(ETHERTYPE_ARP)) {
+
+            char *target_ip = (char *) malloc(20 * sizeof(char));
 
             /* Initialize an ARP header structure with the data provided in the packet */
             struct ether_arp *arp_header = (struct ether_arp *) (m.payload + sizeof(struct
@@ -100,12 +157,12 @@ int main(int argc, char *argv[]) {
                     /* Build the header of the ARP reply and the Ethernet frame */
                     struct ether_arp *arp_reply = (struct ether_arp *) (reply.payload + sizeof
                             (struct ether_header));
-                    build_arp_frame(arp_reply, ARPOP_REPLY, interface_mac, interface_ip_string,
-                                    arp_header->arp_sha, source_ip);
+                    build_arp_frame(arp_reply, ARPOP_REPLY, source_interface_mac,
+                                    interface_ip_string, arp_header->arp_sha, source_ip);
 
                     struct ether_header *reply_eth_header = (struct ether_header *) reply.payload;
-                    build_ethernet_header(reply_eth_header, interface_mac, arp_reply->arp_tha,
-                                          ETHERTYPE_ARP);
+                    build_ethernet_header(reply_eth_header, source_interface_mac,
+                                          arp_reply->arp_tha, ETHERTYPE_ARP);
 
                     /* Send the reply out the interface it came from */
                     send_packet(m.interface, &reply);
@@ -113,40 +170,17 @@ int main(int argc, char *argv[]) {
 
                 /* Add the IP and MAC address of the source host to the ARP table */
                 add_entry_to_table(arp_table, &arp_table_length, source_ip, arp_header->arp_sha);
-            }
-        } else {
-            /* If the message is not an ARP frame, check if the destination MAC address exists in
-             * the ARP table */
-            inet_ntop(AF_INET, &(ip_header->daddr), destination_ip, 20);
 
-            /* Find the best route to the destination network and the IP of the interface of that
-             * network */
-            best_route = get_best_route(ip_header->daddr);
-            destination_gateway = get_interface_ip(best_route->interface);
-
-            /* If there is no entry containing the destination IP address, send a broadcast ARP
-             * request to get the MAC of the host */
-            if (get_arp_entry(arp_table, arp_table_length, destination_ip) == NULL) {
-                packet request;
-                uint8_t *broadcast_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
-
-                for (int i = 0; i < 6; ++i) {
-                    broadcast_mac[i] = 0xff;
+                if (arp_header->arp_op == htons(ARPOP_REPLY)) {
+                    printf("plll");
+//                    send_queued_messages();
                 }
-
-                /* Build the request's packet headers and send the created packet */
-                struct ether_arp *arp_request = (struct ether_arp *) (request.payload + sizeof
-                        (struct ether_header));
-                build_arp_frame(arp_request, ARPOP_REQUEST, interface_mac, destination_gateway,
-                                broadcast_mac, destination_ip);
-
-                struct ether_header *request_eth_header = (struct ether_header *) request.payload;
-                build_ethernet_header(request_eth_header, interface_mac, broadcast_mac,
-                                      ETHERTYPE_ARP);
-
-                send_packet(best_route->interface, &request);
             }
+
+            free(target_ip);
         }
+
+
     }
 }
 

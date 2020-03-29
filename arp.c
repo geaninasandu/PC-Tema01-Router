@@ -3,6 +3,7 @@
 //
 
 #include "include/arp.h"
+#include "include/skel.h"
 
 void build_arp_frame(struct ether_arp *arp_frame, uint16_t op, uint8_t *sha, char *spa, uint8_t
 *tha, char *tpa) {
@@ -58,4 +59,27 @@ void build_ethernet_header(struct ether_header *frame_header, uint8_t *source_ma
     }
 
     frame_header->ether_type = htons(type);
+}
+
+void send_arp_request(uint8_t *gateway_interface_mac, char *gateway_interface_ip, uint8_t
+*destination_ip, int interface) {
+    packet request;
+    uint8_t *broadcast_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
+
+    for (int i = 0; i < 6; ++i) {
+        broadcast_mac[i] = 0xff;
+    }
+
+    /* Build the request's packet headers and send the created packet */
+    struct ether_arp *arp_request = (struct ether_arp *) (request.payload + sizeof
+            (struct ether_header));
+    build_arp_frame(arp_request, ARPOP_REQUEST, gateway_interface_mac, gateway_interface_ip,
+            broadcast_mac, destination_ip);
+
+    printf("%d\n", arp_request->arp_tpa);
+
+    struct ether_header *request_eth_header = (struct ether_header *) request.payload;
+    build_ethernet_header(request_eth_header, gateway_interface_mac, broadcast_mac, ETHERTYPE_ARP);
+
+    send_packet(interface, &request);
 }
