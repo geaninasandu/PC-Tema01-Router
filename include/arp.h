@@ -25,7 +25,10 @@ void add_entry_to_table(arp_table_entry *arp_table, int *arp_table_length, char 
 arp_table_entry *get_arp_entry(arp_table_entry *arp_table, int arp_table_length, char
 *destination_ip);
 
-void send_arp_request(uint8_t *gateway_interface_mac, char *gateway_interface_ip, uint8_t
-*destination_ip, int interface);
+void send_arp_reply(packet *reply, struct ether_arp *arp_request, uint8_t *interface_mac, char
+*interface_ip, char *target_ip);
+
+void send_arp_request(packet *request, uint8_t *gateway_interface_mac, char *gateway_interface_ip,
+                      char *destination_ip, int interface);
 
 #endif //TEMA01_UTILS_H
