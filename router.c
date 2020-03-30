@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
                     build_ethernet_header(reply_eth_header, interface_mac, arp_reply->arp_tha,
                                           ETHERTYPE_ARP);
 
+
                     /* Send the reply out the interface it came from */
                     send_packet(m.interface, &reply);
                 }
