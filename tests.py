@@ -6,6 +6,7 @@ from scapy.layers.l2 import Ether, ARP, checksum
 
 import info
 
+
 ETHER_BROADCAST = "ff:ff:ff:ff:ff:ff"
 
 
@@ -98,10 +99,10 @@ def cull_icmp_unreachable(host, packets):
 def cull_dull_packets(host, packets):
     """Remove uninteresting packets (but at most one of them)"""
     validations = {
-        valid_arp_req_from_router: False,
-        valid_arp_req_to_router: False,
-        valid_arp_reply_from_router: False,
-        valid_arp_reply_to_router: False,
+        valid_arp_req_from_router : False,
+        valid_arp_req_to_router : False,
+        valid_arp_reply_from_router : False,
+        valid_arp_reply_to_router : False,
     }
 
     culled_packets = []
@@ -375,17 +376,17 @@ def host_unreachable_p(testname, packets):
         error("No packet received")
         return False
 
-    if not res or len(packets) > 1:
+    if not res or len(packets) > 2:
         error("Excess packets:")
         dump_packets(packets)
 
         return False
 
-    assert ICMP in packets[0], "no ICMP packet from router"
-    i = packets[0][ICMP]
-    if not (i.type == 3 and i.code == 1):
+    assert ICMP in packets[1], "no ICMP packet from router"
+    i = packets[1][ICMP]
+    if not (i.type == 3 and i.code == 0):
         error("Wrong ICMP type and/or code")
-        error("Expected type=3, code=1")
+        error("Expected type=3, code=0")
         error("Got type={}, code={}".format(i.type, i.code))
         return False
 
@@ -432,6 +433,7 @@ def router_icmp_a(testname):
     return [Ether(dst=r_mac) / IP(dst=r_ip) / ICMP()]
 
 
+
 def forward10packets_p(testname, packets):
     hr = TESTS[testname].host_r
     res, packets = cull_dull_packets(hr, packets)
@@ -458,26 +460,26 @@ def forward10packets_a(testname):
 
 Test = namedtuple("Test", ["host_s", "host_r", "active_fn", "passive_fn"])
 TESTS = {
-    "router_arp_reply": Test(0, 0, router_arp_reply_a, router_arp_reply_p),
-    "router_arp_request": Test(0, 1, router_arp_request_a, router_arp_request_p),
-    "forward": Test(0, 1, forward_a, forward_p),
-    "forward_no_arp": Test(0, 1, forward_no_arp_a, forward_p),
-    "ttl": Test(0, 1, forward_a, forward_p),
-    "checksum": Test(0, 1, forward_a, forward_p),
-    "wrong_checksum": Test(0, 1, wrong_checksum_a, check_nothing),
-    "router_icmp": Test(0, 0, router_icmp_a, router_icmp_p),
-    "icmp_timeout": Test(0, 0, icmp_timeout_a, icmp_timeout_p),
-    "host_unreachable": Test(0, 0, icmp_timeout_a, icmp_timeout_p),
-    "forward02": Test(0, 2, forward_a, forward_p),
-    "forward03": Test(0, 3, forward_a, forward_p),
-    "forward10": Test(1, 0, forward_a, forward_p),
-    "forward12": Test(1, 2, forward_a, forward_p),
-    "forward13": Test(1, 3, forward_a, forward_p),
-    "forward20": Test(2, 0, forward_a, forward_p),
-    "forward21": Test(2, 1, forward_a, forward_p),
-    "forward23": Test(2, 3, forward_a, forward_p),
-    "forward30": Test(3, 0, forward_a, forward_p),
-    "forward31": Test(3, 1, forward_a, forward_p),
-    "forward32": Test(3, 2, forward_a, forward_p),
-    "forward10packets": Test(0, 1, forward10packets_a, forward10packets_p),
+        "router_arp_reply": Test(0, 0, router_arp_reply_a, router_arp_reply_p),
+        "router_arp_request": Test(0, 1, router_arp_request_a, router_arp_request_p),
+        "forward": Test(0, 1, forward_a, forward_p),
+        "forward_no_arp": Test(0, 1, forward_no_arp_a, forward_p),
+        "ttl": Test(0, 1, forward_a, forward_p),
+        "checksum": Test(0, 1, forward_a, forward_p),
+        "wrong_checksum": Test(0, 1, wrong_checksum_a, check_nothing),
+        "router_icmp": Test(0, 0, router_icmp_a, router_icmp_p),
+        "icmp_timeout": Test(0, 0, icmp_timeout_a, icmp_timeout_p),
+        "host_unreachable": Test(0, 0, host_unreachable_a, host_unreachable_p),
+        "forward02": Test(0, 2, forward_a, forward_p),
+        "forward03": Test(0, 3, forward_a, forward_p),
+        "forward10": Test(1, 0, forward_a, forward_p),
+        "forward12": Test(1, 2, forward_a, forward_p),
+        "forward13": Test(1, 3, forward_a, forward_p),
+        "forward20": Test(2, 0, forward_a, forward_p),
+        "forward21": Test(2, 1, forward_a, forward_p),
+        "forward23": Test(2, 3, forward_a, forward_p),
+        "forward30": Test(3, 0, forward_a, forward_p),
+        "forward31": Test(3, 1, forward_a, forward_p),
+        "forward32": Test(3, 2, forward_a, forward_p),
+        "forward10packets": Test(0, 1, forward10packets_a, forward10packets_p),
 }

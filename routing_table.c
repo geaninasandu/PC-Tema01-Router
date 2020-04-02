@@ -1,7 +1,3 @@
-//
-// Created by maria on 3/22/20.
-//
-
 #include "include/routing_table.h"
 
 /**
