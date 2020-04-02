@@ -2,7 +2,7 @@
 #include "include/routing_table.h"
 #include "include/arp.h"
 #include "include/queue.h"
-#include "include/forwarding.h"
+#include "include/icmp.h"
 
 routing_table_entry *routing_table;
 int routing_table_length = 0;
@@ -31,6 +31,9 @@ int binary_search(uint32_t destination) {
         }
     }
 
+    if (routing_table[index].prefix != (destination & routing_table[index].subnet_mask))
+        index = -1;
+
     return index;
 }
 
@@ -55,8 +58,7 @@ int main(int argc, char *argv[]) {
 
     init();
 
-    queue packet_queue = queue_create();
-    packet_queue = malloc(50 * sizeof(queue));
+    /* Get the routing table */
     routing_table = read_from_file(&routing_table_length);
     arp_table = (arp_table_entry *) malloc(10 * sizeof(arp_table_entry));
 
@@ -76,7 +78,7 @@ int main(int argc, char *argv[]) {
         struct ether_header *ethernet_header = (struct ether_header *) m.payload;
         struct iphdr *ip_header = (struct iphdr *) (m.payload + sizeof(struct ether_header));
 
-        /* If the message is an ARP packet check its protocol */
+        /* Check the type of the Ethernet header */
         if (ethernet_header->ether_type == htons(ETHERTYPE_IP)) {
             char *outgoing_interface_ip;
             routing_table_entry *best_route;
@@ -128,45 +130,43 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            /* Get the interface connected to the destination host */
+            /* Get the addresses of the interface connected to the destination host */
             outgoing_interface_ip = get_interface_ip(best_route->interface);
 
-            /* Decrease the ttl field and recalculate the checksum of the packet */
-            ip_header->ttl--;
-            ip_header->check = 0;
-            ip_header->check = ip_checksum(ip_header, sizeof(struct iphdr));
+            uint8_t *outgoing_interface_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
+            get_interface_mac(best_route->interface, outgoing_interface_mac);
+
+            /* Find the entry containing the destination IP address in the ARP table */
+            arp_table_entry *entry = get_arp_entry(arp_table, arp_table_length, destination_ip);
 
             /* If there is no entry containing the destination IP address, add the message in a
              * queue and send a broadcast ARP request to get the MAC of the host */
-            if (get_arp_entry(arp_table, arp_table_length, destination_ip) == NULL) {
-                queue_enq(packet_queue, &m);
-
-                uint8_t *outgoing_interface_mac = (uint8_t *) malloc(6 * sizeof(uint8_t));
-                get_interface_mac(best_route->interface, outgoing_interface_mac);
-
+            if (entry == NULL) {
                 packet request;
                 send_arp_request(&request, outgoing_interface_mac, outgoing_interface_ip,
                                  destination_ip, best_route->interface);
                 send_packet(best_route->interface, &request);
             } else {
-                /* If the router knows the MAC of the destination, forward the packet */
-                arp_table_entry *entry = get_arp_entry(arp_table, arp_table_length, destination_ip);
+                /* If the router knows the MAC of the destination, recalculate its fields and
+                 * forward the packet */
+                ip_header->ttl--;
+                ip_header->check = 0;
+                ip_header->check = ip_checksum(ip_header, sizeof(struct iphdr));
 
-                for (int i = 0; i < 6; ++i) {
-                    ethernet_header->ether_shost[i] = interface_mac[i];
-                    ethernet_header->ether_dhost[i] = entry->mac[i];
-                }
-
+                build_ethernet_header(ethernet_header, interface_mac, entry->mac, ETHERTYPE_IP);
                 send_packet(best_route->interface, &m);
             }
+
+            free(outgoing_interface_mac);
+
         } else if (ethernet_header->ether_type == htons(ETHERTYPE_ARP)) {
 
             /* If the packet is an ARP frame, check its operation */
-            char *target_ip = (char *) malloc(20 * sizeof(char));
-
             /* Initialize an ARP header structure with the data provided in the packet */
             struct ether_arp *arp_header = (struct ether_arp *) (m.payload + sizeof(struct
                     ether_header));
+
+            char *target_ip = (char *) malloc(20 * sizeof(char));
 
             /* Find the target IP of the ARP request and convert it to string */
             inet_ntop(AF_INET, &(arp_header->arp_tpa), target_ip, 20);
@@ -176,13 +176,11 @@ int main(int argc, char *argv[]) {
              * check if the frame was an ARP request */
             if (!strcmp(target_ip, interface_ip)) {
 
-                /* If the frame is a request, build a reply frame and send it to the host */
+                /* If the frame is a request, build a reply frame and send it out the interface
+                 * it came from */
                 if (arp_header->arp_op == htons(ARPOP_REQUEST)) {
                     packet reply;
-
                     send_arp_reply(&reply, arp_header, interface_mac, interface_ip, source_ip);
-
-                    /* Send the reply out the interface it came from */
                     send_packet(m.interface, &reply);
                 }
 
@@ -192,7 +190,10 @@ int main(int argc, char *argv[]) {
 
             free(target_ip);
         }
+
+        /* Free the dynamically allocated variables */
+        free(source_ip);
+        free(destination_ip);
+        free(interface_mac);
     }
 }
-
-

@@ -15,6 +15,9 @@ from mininet.util import dumpNodeConnections
 
 import info
 
+import os.path
+from os import path
+
 POINTS_PER_TEST = 5
 
 
@@ -22,9 +25,13 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
+def static_arp():
+    srcp = os.path.join("src", info.ARP_TABLE)
+    return path.exists(info.ARP_TABLE) or path.exists(srcp)
+
+
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
-
     def build(self, n=2):
         switch = self.addHost('router')
         # Python's range(N) generates 0..N-1
@@ -80,11 +87,13 @@ class NetworkManager(object):
             h_if = info.get("host_if_name", i)
             disable_nic_checksum(host, h_if)
 
+
         # we want complete control over these actions
         self.router.cmd('echo "0" > /proc/sys/net/ipv4/ip_forward')
         self.router.cmd('echo "1" > /proc/sys/net/ipv4/icmp_echo_ignore_all')
-        for i in range(len(self.hosts)):
-            disable_arp(self.router, "r-{}".format(i))
+        if not static_arp():
+            for i in range(len(self.hosts)):
+                disable_arp(self.router, "r-{}".format(i))
 
     def add_default_routes(self):
         for i, host in enumerate(self.hosts):
@@ -148,6 +157,13 @@ def validate_test_results(results):
     return passed
 
 
+def should_skip(testname):
+    if static_arp():
+        return testname in {"router_arp_reply", "router_arp_request"}
+
+    return False
+
+
 def main(run_tests=False):
     topo = SingleSwitchTopo(n=info.N_HOSTS)
     net = Mininet(topo)
@@ -160,18 +176,25 @@ def main(run_tests=False):
 
     max_points = POINTS_PER_TEST * len(tests.TESTS)
     total = 0
-
     print("{:=^80}\n".format(" Running tests "))
     if run_tests:
         for testname in tests.TESTS:
-            results = nm.run_test(testname)
-            passed = validate_test_results(results)
+            skipped = False
+
+            if should_skip(testname):
+                skipped = True
+                passed = False
+            else:
+                results = nm.run_test(testname)
+                passed = validate_test_results(results)
             crt_points = POINTS_PER_TEST if passed else 0
             total += crt_points
             str_status = "PASSED" if passed else "FAILED"
+            if skipped:
+                str_status = "SKIPPED"
             str_points = "[{}/{}]".format(crt_points, POINTS_PER_TEST)
             print("{: >20} {:.>40} {: >8} {: >8}".format(testname, "", str_status,
-                                                         str_points))
+                                                        str_points))
             time.sleep(info.TIMEOUT / 2)
 
         print("\nTOTAL: {}/{}\n".format(total, max_points))

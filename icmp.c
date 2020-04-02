@@ -1,4 +1,4 @@
-#include "include/forwarding.h"
+#include "include/icmp.h"
 #include "include/arp.h"
 
 /**
@@ -8,11 +8,9 @@
  *                          number;
  */
 int is_router_interface(char *destination_ip) {
-    int router_interfaces[] = {0, 1, 2, 3};
-    int interfaces_number = 4;
 
-    for (int i = 0; i < interfaces_number; ++i) {
-        if (!strcmp(destination_ip, get_interface_ip(router_interfaces[i])))
+    for (int i = 0; i < ROUTER_NUM_INTERFACES; ++i) {
+        if (!strcmp(destination_ip, get_interface_ip(i)))
             return i;
     }
 
