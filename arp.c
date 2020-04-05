@@ -102,6 +102,8 @@ void send_arp_reply(packet *reply, struct ether_arp *arp_request, uint8_t *inter
     build_arp_frame(arp_reply, ARPOP_REPLY, interface_mac, interface_ip, arp_request->arp_sha,
                     target_ip);
 
+    reply->len = sizeof(struct ether_header) + sizeof(struct ether_arp);
+
     struct ether_header *reply_eth_header = (struct ether_header *) reply->payload;
     build_ethernet_header(reply_eth_header, interface_mac, arp_reply->arp_tha, ETHERTYPE_ARP);
 }
