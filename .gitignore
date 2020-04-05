@@ -1,7 +1,6 @@
 hosts_output
 router
 .idea
-test.c
 router_*
 __pycache__
 =======

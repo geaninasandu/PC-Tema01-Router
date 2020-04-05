@@ -57,7 +57,6 @@ void add_entry_to_table(arp_table_entry *arp_table, int *arp_table_length, char 
                         uint8_t *mac_address) {
 
     if (get_arp_entry(arp_table, *arp_table_length, ip_address) == NULL) {
-
         strcpy(arp_table[*arp_table_length].ip, ip_address);
 
         for (int i = 0; i < 6; ++i) {
@@ -132,6 +131,8 @@ void send_arp_request(packet *request, uint8_t *gateway_interface_mac, char *gat
 
     struct ether_header *request_eth_header = (struct ether_header *) request->payload;
     build_ethernet_header(request_eth_header, gateway_interface_mac, broadcast_mac, ETHERTYPE_ARP);
+
+    request->len = sizeof(struct ether_header) + sizeof(struct ether_arp);
 
     free(broadcast_mac);
 }
