@@ -3,6 +3,8 @@ router
 .idea
 router_*
 __pycache__
+*.py
+check.sh
 =======
 # Prerequisites
 *.d
